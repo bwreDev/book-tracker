@@ -41,6 +41,9 @@
           </q-td>
         </q-tr>
       </template>
+      <q-btn size="sm" color="primary" @click="openAddBookModal(props.row.id)"
+        >Add Book</q-btn
+      >
     </q-table>
     <!-- <q-markup-table flat bordered :grid="$q.screen.xs">
       <thead class="bg-teal">
@@ -91,6 +94,50 @@
       </tbody>
     </q-markup-table> -->
   </div>
+  <q-dialog ref="addDialogRef" v-model="showAddBookDialog">
+    <q-card>
+      <q-card-section>
+        <q-form class="addForm">
+          <h5>Add Book</h5>
+          <!-- <q-input label="Search for a Book" hint="Harry Potter" v-model="bookSearch" /> -->
+          <q-input label="Title" v-model="bookToAdd.title" />
+          <q-input label="Author" v-model="bookToAdd.author" />
+          <q-select
+            label="List"
+            v-model="selectedList"
+            :options="store.userBookLists"
+            :option-label="(item) => (item === null ? 'Null value' : item.name)"
+          >
+            <template v-slot:option="scope">
+              <q-item v-bind="scope.itemProps">
+                <q-item-section>
+                  <q-item-label>{{ scope.opt.name }}</q-item-label>
+                  <q-item-label caption>{{ scope.opt.year }}</q-item-label>
+                </q-item-section>
+              </q-item>
+            </template>
+          </q-select>
+          <q-select
+            label="Status"
+            v-model="selectedStatus"
+            :options="store.statuses"
+            :option-label="(item) => (item === null ? 'Null value' : item.name)"
+          >
+            <template v-slot:option="scope">
+              <q-item v-bind="scope.itemProps">
+                <q-item-section>
+                  <q-item-label>{{ scope.opt.name }}</q-item-label>
+                </q-item-section>
+              </q-item>
+            </template>
+          </q-select>
+          <q-input label="Pages" v-model="bookToAdd.pages" />
+          <q-btn class="q-mt-md" color="cyan" @click="addBook">Add Book</q-btn>
+        </q-form>
+      </q-card-section>
+    </q-card>
+  </q-dialog>
+
   <q-dialog ref="editDialogRef" v-model="showEditBookDialog">
     <q-card>
       <q-card-section>
@@ -222,6 +269,7 @@ const tagColors = {
   4: "red-3",
 };
 const showEditBookDialog = ref(false);
+const showAddBookDialog = ref(false);
 const bookData = computed(() => {
   return books.value.map((book) => {
     return {
@@ -246,6 +294,25 @@ function openEditBookModal(book_id) {
   selectedStatus.value = store.statuses.find(
     (status) => status.id === book.reading_status_id
   );
+}
+
+function openAddBookModal() {
+  showAddBookDialog.value = true;
+}
+
+async function addBook() {
+  if (!title || !author || !pages) return;
+  const book = {
+    title: title.value,
+    author: author.value,
+    pages: pages.value,
+    reading_status_id: selectedStatus.value,
+    list_id: selectedList.value,
+    image_url: imageUrl.value,
+    user_id: store.user.id,
+  };
+  await supabase.from("books").insert(book);
+  emit("closeModal");
 }
 
 function getReadingStatus(id) {
